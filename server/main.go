@@ -1,11 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/rand"
-	"os"
-	"os/exec"
-	"time"
+	"net/http"
 )
 
 func countNeighbours(grid [][]int, l int, m int) int {
@@ -48,17 +47,9 @@ func updateGridState(grid [][]int) [][]int {
 	return newGrid
 }
 
-func printGrid(grid [][]int) {
-	for _, row := range grid {
-		for _, cell := range row {
-			if cell == 1 {
-				fmt.Print("# ")
-			} else {
-				fmt.Print(". ")
-			}
-		}
-		fmt.Println()
-	}
+func createJsonResponse(w http.ResponseWriter, data interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(data)
 }
 
 func initGrid(rows int, cols int, zeroPercent float64) [][]int {
@@ -78,31 +69,28 @@ func initGrid(rows int, cols int, zeroPercent float64) [][]int {
 	return grid
 }
 
-func clearConsole() {
-	cmd := exec.Command("clear")
-	cmd.Stdout = os.Stdout
-	cmd.Run()
+func generateInitialGrid(w http.ResponseWriter, r *http.Request) {
+	grid := initGrid(25, 25, 0.5)
+	createJsonResponse(w, grid)
+}
+
+func processGrid(w http.ResponseWriter, r *http.Request) {
+	var grid [][]int
+	err := json.NewDecoder(r.Body).Decode(&grid)
+	if err != nil {
+		fmt.Println("Couldnt decode request", err)
+	}
+
+	updatedGrid := updateGridState(grid)
+	createJsonResponse(w, updatedGrid)
 }
 
 func main() {
-	fmt.Println("Start Init Game State")
+	http.HandleFunc("/requestGrid", generateInitialGrid)
+	http.HandleFunc("/processGrid", processGrid)
 
-	const rows int = 10
-	const cols int = 20
-	grid := initGrid(rows, cols, 0.5)
-	fmt.Println(grid)
-	numIterations := 100
-	for i := 0; i < numIterations; i++ {
-		clearConsole()
-		printGrid(grid)
-		grid = updateGridState(grid)
-		time.Sleep(500 * time.Millisecond)
+	err := http.ListenAndServe(":8080", nil)
+	if err != nil {
+		fmt.Println("Failed to listen to 8080", err)
 	}
-
 }
-
-// game of life server client architecture
-// client reqeusts initial state
-// and client pushes state to server
-// server calculates the new state and returns it to the client
-// super stupid but seems fun
