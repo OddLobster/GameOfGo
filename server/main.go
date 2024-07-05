@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
+	"strconv"
 )
 
 func countNeighbours(grid [][]int, l int, m int) int {
@@ -70,7 +71,9 @@ func initGrid(rows int, cols int, zeroPercent float64) [][]int {
 }
 
 func generateInitialGrid(w http.ResponseWriter, r *http.Request) {
-	grid := initGrid(25, 25, 0.5)
+	rows, _ := strconv.Atoi(r.URL.Query().Get("rows"))
+	cols, _ := strconv.Atoi(r.URL.Query().Get("cols"))
+	grid := initGrid(rows, cols, 0.5)
 	createJsonResponse(w, grid)
 }
 

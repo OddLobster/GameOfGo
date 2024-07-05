@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"net/http"
 	"time"
@@ -10,8 +11,9 @@ import (
 	"GameOfGo/utils"
 )
 
-func requestInitialGrid() [][]int {
-	response, err := http.Get("http://localhost:8080/requestGrid")
+func requestInitialGrid(rows int, cols int) [][]int {
+	url := fmt.Sprintf("http://localhost:8080/requestGrid?rows=%d&cols=%d", rows, cols)
+	response, err := http.Get(url)
 	if err != nil {
 		fmt.Println("Error requesting initial grid:", err)
 	}
@@ -37,13 +39,22 @@ func getUpdatedGrid(grid [][]int) [][]int {
 }
 
 func main() {
-	numIterations := 100
-	grid := requestInitialGrid()
+	numIterations := flag.Int("numIter", 100, "Number of iterations steps for the GOL simulation")
+	gridRows := flag.Int("rows", 25, "Number of rows in the grid")
+	gridCols := flag.Int("cols", 25, "Number of columns in the grid")
+	help := flag.Bool("help", false, "Show help")
+	flag.Parse()
+
+	if *help {
+		flag.Usage()
+	}
+
+	grid := requestInitialGrid(*gridRows, *gridCols)
 	utils.PrintGrid(grid)
-	for i := 0; i < numIterations; i++ {
+	for i := 0; i < *numIterations; i++ {
 		utils.ClearConsole()
 		grid = getUpdatedGrid(grid)
 		utils.PrintGrid(grid)
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(250 * time.Millisecond)
 	}
 }
